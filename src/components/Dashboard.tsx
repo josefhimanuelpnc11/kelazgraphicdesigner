@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useStudentDashboard } from '../hooks/useStudentDashboard';
 import { authService } from '../services/auth';
 import { ManageContent } from './ManageContent';
 import { CreateQuiz } from './CreateQuiz';
@@ -20,6 +21,9 @@ export const Dashboard = () => {
     refreshData,
     createSampleData
   } = useDashboardData();
+
+  // Student stats
+  const studentStats = useStudentDashboard(user?.uid);
 
   // Modal states
   const [showManageContent, setShowManageContent] = useState(false);
@@ -125,9 +129,9 @@ export const Dashboard = () => {
                   <p>Akses kelas yang Anda ikuti dan pantau progres pembelajaran</p>
                   <div className="course-progress">
                     <div className="progress-bar">
-                      <div className="progress-fill" style={{ width: '45%' }}></div>
+                      <div className="progress-fill" style={{ width: `${studentStats.progressPercent}%` }}></div>
                     </div>
-                    <span>45% Selesai</span>
+                    <span>{studentStats.progressPercent}% Selesai</span>
                   </div>
                   <button className="btn-primary">Lanjutkan Belajar</button>
                 </div>
@@ -137,11 +141,11 @@ export const Dashboard = () => {
                   <p>Uji pengetahuan Anda dengan kuis interaktif</p>
                   <div className="quiz-stats">
                     <div className="stat">
-                      <strong>3</strong>
+                      <strong>{studentStats.completedQuizzes}</strong>
                       <span>Selesai</span>
                     </div>
                     <div className="stat">
-                      <strong>85%</strong>
+                      <strong>{studentStats.averageScore}%</strong>
                       <span>Rata-rata Nilai</span>
                     </div>
                   </div>
@@ -152,24 +156,17 @@ export const Dashboard = () => {
                   <h3>📊 Progres</h3>
                   <p>Pantau perjalanan belajar Anda</p>
                   <div className="progress-stats">
-                    <div className="progress-item">
-                      <span>Dasar-dasar Desain</span>
-                      <div className="progress-bar small">
-                        <div className="progress-fill" style={{ width: '80%' }}></div>
+                    {studentStats.moduleProgress.slice(0,3).map(mp => (
+                      <div key={mp.moduleId} className="progress-item">
+                        <span>{mp.title}</span>
+                        <div className="progress-bar small">
+                          <div className="progress-fill" style={{ width: `${mp.percent}%` }}></div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="progress-item">
-                      <span>Desain Logo</span>
-                      <div className="progress-bar small">
-                        <div className="progress-fill" style={{ width: '30%' }}></div>
-                      </div>
-                    </div>
-                    <div className="progress-item">
-                      <span>Tools Desain Digital</span>
-                      <div className="progress-bar small">
-                        <div className="progress-fill" style={{ width: '10%' }}></div>
-                      </div>
-                    </div>
+                    ))}
+                    {studentStats.moduleProgress.length === 0 && (
+                      <div className="empty-state">Belum ada progres untuk ditampilkan</div>
+                    )}
                   </div>
                 </div>
 
@@ -177,10 +174,8 @@ export const Dashboard = () => {
                   <h3>🎯 Pencapaian</h3>
                   <p>Milestone pembelajaran Anda</p>
                   <div className="achievements">
-                    <div className="achievement earned">🏆 Kuis Pertama Selesai</div>
-                    <div className="achievement earned">⭐ 5 Materi Selesai</div>
-                    <div className="achievement">🎨 Proyek Desain Selesai</div>
-                    <div className="achievement">💯 Nilai Kuis Sempurna</div>
+                    <div className={`achievement ${studentStats.completedQuizzes >= 1 ? 'earned' : ''}`}>🏆 Kuis Pertama Selesai</div>
+                    <div className={`achievement ${studentStats.averageScore >= 90 ? 'earned' : ''}`}>💯 Rata-rata Nilai ≥ 90%</div>
                   </div>
                 </div>
               </div>

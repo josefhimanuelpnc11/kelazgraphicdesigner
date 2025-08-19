@@ -13,7 +13,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { ModuleDoc, LessonDoc, QuizDoc, QuestionDoc, AnswerDoc, ProgressDoc, UserDoc } from '../types';
+import type { ModuleDoc, LessonDoc, QuizDoc, QuestionDoc, AnswerDoc, ProgressDoc, UserDoc, EnrollmentDoc } from '../types';
 
 export const firestoreService = {
   // ===== MODULES =====
@@ -338,6 +338,41 @@ export const firestoreService = {
     } catch (error) {
       console.error('Error getting user progress:', error);
       return [];
+    }
+  },
+
+  // ===== ENROLLMENTS =====
+  async getEnrollmentsByUser(userId: string): Promise<(EnrollmentDoc & { id: string })[]> {
+    try {
+      const ref = collection(db, 'enrollments');
+      const snap = await getDocs(query(ref, where('userId', '==', userId)));
+      return snap.docs.map(d => ({ id: d.id, ...(d.data() as EnrollmentDoc) }));
+    } catch (error) {
+      console.error('Error getting enrollments:', error);
+      return [];
+    }
+  },
+
+  async enrollUserToModule(userId: string, moduleId: string): Promise<string> {
+    try {
+      const ref = await addDoc(collection(db, 'enrollments'), {
+        userId,
+        moduleId,
+        enrolledAt: serverTimestamp()
+      } as any);
+      return ref.id;
+    } catch (error) {
+      console.error('Error creating enrollment:', error);
+      throw error;
+    }
+  },
+
+  async unenrollUser(enrollmentId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'enrollments', enrollmentId));
+    } catch (error) {
+      console.error('Error deleting enrollment:', error);
+      throw error;
     }
   },
 

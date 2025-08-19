@@ -58,3 +58,10 @@ export interface ProgressDoc {
   scores: Record<string, number>; // { [quizId]: scorePercent }
   updatedAt: Timestamp;
 }
+
+// Enrollment links a student to a module (class membership)
+export interface EnrollmentDoc {
+  userId: string;
+  moduleId: string;
+  enrolledAt: Timestamp;
+}
