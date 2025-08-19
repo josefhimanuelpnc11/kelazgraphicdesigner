@@ -223,6 +223,7 @@
   font-size: 0.9rem;
   width: 100%;
   margin-top: 1rem;
+  text-decoration: none; /* ensure Link styled as button has no underline */
 }
 
 .btn-primary {
@@ -239,6 +240,7 @@
   background: #f1f5f9;
   color: #475569;
   border: 1px solid #e2e8f0;
+  text-decoration: none; /* avoid underline on anchors */
 }
 
 .btn-secondary:hover {

@@ -68,10 +68,10 @@ export const LearnPage: React.FC = () => {
   return (
     <div className="dashboard-main">
       <div className="container">
-        <div style={{ marginTop: 0, marginBottom: 12 }}>
-          <Link className="btn-secondary" to="/dashboard">← Kembali ke Dashboard</Link>
-        </div>
         <h1 style={{ marginTop: 0 }}>Belajar</h1>
+        <div style={{ marginTop: 8, marginBottom: 16 }}>
+          <Link className="btn-secondary" to="/dashboard" style={{ display: 'inline-block', width: 'auto' }}>← Kembali ke Dashboard</Link>
+        </div>
         {error && <div className="error-message">{error}</div>}
         {loading ? (
           <div className="loading-state"><div className="loading-spinner" /><p>Memuat konten belajar...</p></div>
