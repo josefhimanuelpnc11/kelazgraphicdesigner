@@ -26,21 +26,21 @@ export const AuthPage = () => {
 
   const validateForm = (): boolean => {
     if (!formData.email || !formData.password) {
-      setFormError('Email and password are required');
+      setFormError('Email dan kata sandi wajib diisi');
       return false;
     }
 
     if (!isLogin) {
       if (!formData.name) {
-        setFormError('Name is required');
+        setFormError('Nama wajib diisi');
         return false;
       }
       if (formData.password.length < 6) {
-        setFormError('Password must be at least 6 characters');
+        setFormError('Kata sandi minimal 6 karakter');
         return false;
       }
       if (formData.password !== formData.confirmPassword) {
-        setFormError('Passwords do not match');
+        setFormError('Kata sandi tidak cocok');
         return false;
       }
     }
@@ -61,7 +61,7 @@ export const AuthPage = () => {
         await register(formData.email, formData.password, formData.name);
       }
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'An error occurred');
+  setFormError(error instanceof Error ? error.message : 'Terjadi kesalahan');
     }
   };
 
@@ -70,7 +70,7 @@ export const AuthPage = () => {
     try {
       await loginWithGoogle();
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : 'Google login failed');
+  setFormError(error instanceof Error ? error.message : 'Masuk dengan Google gagal');
     }
   };
 
@@ -97,8 +97,8 @@ export const AuthPage = () => {
     <div className="auth-page">
       <div className="auth-container">
         <div className="auth-header">
-          <h1>Kelaz Graphic Design</h1>
-          <p>Online Learning Platform</p>
+          <h1>Kelaz Desain Grafis</h1>
+          <p>Platform Pembelajaran Online</p>
         </div>
 
         <div className="auth-card">
@@ -108,69 +108,69 @@ export const AuthPage = () => {
               onClick={() => setIsLogin(true)}
               type="button"
             >
-              Login
+              Masuk
             </button>
             <button 
               className={`tab ${!isLogin ? 'active' : ''}`}
               onClick={() => setIsLogin(false)}
               type="button"
             >
-              Register
+              Daftar
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="auth-form">
             {!isLogin && (
               <div className="form-group">
-                <label htmlFor="name">Full Name</label>
+                <label htmlFor="name">Nama Lengkap</label>
                 <input
                   type="text"
                   id="name"
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  placeholder="Enter your full name"
+                  placeholder="Masukkan nama lengkap"
                   required={!isLogin}
                 />
               </div>
             )}
 
             <div className="form-group">
-              <label htmlFor="email">Email Address</label>
+              <label htmlFor="email">Alamat Email</label>
               <input
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="Enter your email"
+                placeholder="Masukkan email"
                 required
               />
             </div>
 
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+              <label htmlFor="password">Kata Sandi</label>
               <input
                 type="password"
                 id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                placeholder="Enter your password"
+                placeholder="Masukkan kata sandi"
                 required
               />
             </div>
 
             {!isLogin && (
               <div className="form-group">
-                <label htmlFor="confirmPassword">Confirm Password</label>
+                <label htmlFor="confirmPassword">Konfirmasi Kata Sandi</label>
                 <input
                   type="password"
                   id="confirmPassword"
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  placeholder="Confirm your password"
+                  placeholder="Konfirmasi kata sandi"
                   required={!isLogin}
                 />
               </div>
@@ -187,12 +187,12 @@ export const AuthPage = () => {
               className="btn-primary btn-full"
               disabled={loading}
             >
-              {loading ? 'Please wait...' : (isLogin ? 'Login' : 'Create Account')}
+              {loading ? 'Mohon tunggu...' : (isLogin ? 'Masuk' : 'Buat Akun')}
             </button>
           </form>
 
           <div className="auth-divider">
-            <span>or</span>
+            <span>atau</span>
           </div>
 
           <button 
@@ -209,18 +209,18 @@ export const AuthPage = () => {
                 <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 2.8-3 5.2-5.6 6.8l.1-.1 6.4 5.4C34.9 42 40 38 42.9 32.3c1.1-2.1 1.7-4.6 1.7-7.3 0-1.2-.1-2.3-.4-3.5z"/>
               </svg>
             </span>
-            Continue with Google
+            Lanjutkan dengan Google
           </button>
 
           <div className="auth-footer">
             <p>
-              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              {isLogin ? 'Belum punya akun? ' : 'Sudah punya akun? '}
               <button 
                 type="button" 
                 onClick={toggleMode} 
                 className="link-button"
               >
-                {isLogin ? 'Sign up' : 'Sign in'}
+                {isLogin ? 'Daftar' : 'Masuk'}
               </button>
             </p>
             <p className="back-row">
@@ -229,12 +229,12 @@ export const AuthPage = () => {
                 onClick={handleBack}
                 className="link-button"
               >
-                ← Back to Dashboard
+                ← Kembali ke Dashboard
               </button>
             </p>
             <div className="role-info">
-              <p>📚 Join our free graphic design online class</p>
-              <p>🚀 Start learning with interactive lessons and quizzes</p>
+              <p>📚 Bergabung dengan kelas desain grafis online gratis</p>
+              <p>🚀 Mulai belajar dengan materi interaktif dan kuis</p>
             </div>
           </div>
         </div>

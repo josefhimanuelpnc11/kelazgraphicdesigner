@@ -29,15 +29,12 @@ export const HomePage = ({ onLoginClick }: HomePageProps) => {
         <div className="container">
           <div className="logo">
             <h2>Kelaz</h2>
-            <span>Graphic Design Online Class</span>
+            <span>Kelas Desain Grafis Online</span>
           </div>
           <nav className="nav">
             <ul>
-              <li><a href="#home" className={activeSection === 'home' ? 'active' : ''} onClick={() => setActiveSection('home')}>Home</a></li>
-              <li><a href="#courses" className={activeSection === 'courses' ? 'active' : ''} onClick={() => setActiveSection('courses')}>Courses</a></li>
-              <li><a href="#about" className={activeSection === 'about' ? 'active' : ''} onClick={() => setActiveSection('about')}>About</a></li>
-              <li><a href="#contact" className={activeSection === 'contact' ? 'active' : ''} onClick={() => setActiveSection('contact')}>Contact</a></li>
-              <li><button className="btn-login" onClick={onLoginClick}>Login</button></li>
+                <li><a href="#home" className={activeSection === 'home' ? 'active' : ''} onClick={() => setActiveSection('home')}>Beranda</a></li>
+                  <li><button className="btn-login" onClick={onLoginClick}>Masuk</button></li>
             </ul>
           </nav>
         </div>
@@ -54,21 +51,32 @@ export const HomePage = ({ onLoginClick }: HomePageProps) => {
       <section className="hero">
         <div className="container">
           <div className="hero-content">
-            <h1>Learn Graphic Design Online</h1>
-            <p>Join our free online graphic design class. Master the fundamentals of design with interactive lessons, quizzes, and hands-on projects.</p>
+            <h1>Belajar Desain Grafis Secara Online</h1>
+            <p>Bergabunglah dengan kelas desain grafis online gratis kami. Kuasai dasar-dasar desain melalui materi interaktif, kuis, dan proyek langsung.</p>
             <div className="hero-stats">
               <div className="stat">
-                <h3>Free</h3>
-                <p>100% Free Course</p>
+                <h3>Gratis</h3>
+                <p>Kursus 100% Gratis</p>
               </div>
               <div className="stat">
                 <h3>Online</h3>
-                <p>Learn Anywhere</p>
+                <p>Belajar di Mana Saja</p>
               </div>
             </div>
             <div className="hero-buttons">
-              <button className="btn-primary" onClick={onLoginClick}>Start Learning</button>
-              <button className="btn-secondary">View Curriculum</button>
+                <button className="hero-btn hero-btn--primary" onClick={onLoginClick}>Mulai Belajar</button>
+                <button
+                  className="hero-btn hero-btn--ghost hero-btn--icon"
+                  onClick={() => {
+                    const el = document.getElementById('modules');
+                    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                >
+                  <span>Lihat Kurikulum</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                    <path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
             </div>
           </div>
           <div className="hero-image">
@@ -78,69 +86,69 @@ export const HomePage = ({ onLoginClick }: HomePageProps) => {
       </section>
 
       {/* Features Section */}
-      <section className="features">
+    <section className="features">
         <div className="container">
-          <h2>Why Choose Our Online Class?</h2>
+      <h2>Mengapa Memilih Kelas Ini?</h2>
           <div className="features-grid">
             <div className="feature-card">
               <div className="feature-icon">📚</div>
-              <h3>Interactive Lessons</h3>
-              <p>Learn through engaging content with text, images, and video materials.</p>
+        <h3>Pelajaran Interaktif</h3>
+        <p>Belajar melalui konten menarik dengan teks, gambar, dan materi video.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">❓</div>
-              <h3>Quiz & Assessment</h3>
-              <p>Test your knowledge with multiple-choice quizzes and track your progress.</p>
+        <h3>Kuis & Penilaian</h3>
+        <p>Uji pemahaman dengan kuis pilihan ganda dan pantau progres belajar.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">👥</div>
-              <h3>Small Group Learning</h3>
-              <p>Personal attention with only 3 students per class for better guidance.</p>
+        <h3>Belajar Kelompok Kecil</h3>
+        <p>Perhatian lebih personal: maksimal 3 siswa per kelas untuk bimbingan optimal.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon">💾</div>
-              <h3>Progress Tracking</h3>
-              <p>Monitor your learning journey and see your improvement over time.</p>
+        <h3>Pelacakan Progres</h3>
+        <p>Monitor perjalanan belajar Anda dan lihat peningkatan dari waktu ke waktu.</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Course Modules Section */}
-      <section className="modules">
+        <section className="modules" id="modules">
         <div className="container">
-          <h2>Course Modules</h2>
+          <h2>Tingkat Pembelajaran</h2>
           <div className="modules-list">
             <div className="module-card">
               <div className="module-number">01</div>
               <div className="module-content">
-                <h3>Design Fundamentals</h3>
-                <p>Learn the basic principles of design including color theory, typography, and composition.</p>
+                <h3>Basic</h3>
+                <p>Pelajari prinsip dasar desain termasuk teori warna, tipografi, dan komposisi.</p>
                 <div className="module-meta">
-                  <span>5 Lessons</span>
-                  <span>2 Quizzes</span>
+                  <span>5 Materi</span>
+                  <span>2 Kuis</span>
                 </div>
               </div>
             </div>
             <div className="module-card">
               <div className="module-number">02</div>
               <div className="module-content">
-                <h3>Logo Design</h3>
-                <p>Create memorable logos and understand brand identity development.</p>
+                <h3>Intermediate</h3>
+                <p>Membuat karya yang lebih kuat dan memahami pengembangan identitas visual.</p>
                 <div className="module-meta">
-                  <span>6 Lessons</span>
-                  <span>3 Quizzes</span>
+                  <span>6 Materi</span>
+                  <span>3 Kuis</span>
                 </div>
               </div>
             </div>
             <div className="module-card">
               <div className="module-number">03</div>
               <div className="module-content">
-                <h3>Digital Design Tools</h3>
-                <p>Master popular design software and digital design techniques.</p>
+                <h3>Advanced</h3>
+                <p>Kuasai tools desain populer dan teknik lanjutan untuk hasil profesional.</p>
                 <div className="module-meta">
-                  <span>8 Lessons</span>
-                  <span>4 Quizzes</span>
+                  <span>8 Materi</span>
+                  <span>4 Kuis</span>
                 </div>
               </div>
             </div>
@@ -149,11 +157,11 @@ export const HomePage = ({ onLoginClick }: HomePageProps) => {
       </section>
 
       {/* CTA Section */}
-      <section className="cta">
+    <section className="cta">
         <div className="container">
-          <h2>Ready to Start Your Design Journey?</h2>
-          <p>Join our free online graphic design class today and unlock your creative potential.</p>
-          <button className="btn-primary btn-large" onClick={onLoginClick}>Get Started Now</button>
+      <h2>Siap Memulai Perjalanan Desain Anda?</h2>
+      <p>Bergabung sekarang dan buka potensi kreatif Anda melalui kelas desain grafis gratis.</p>
+      <button className="hero-btn hero-btn--primary" onClick={onLoginClick}>Mulai Sekarang</button>
         </div>
       </section>
 
@@ -162,18 +170,15 @@ export const HomePage = ({ onLoginClick }: HomePageProps) => {
         <div className="container">
           <div className="footer-content">
             <div className="footer-section">
-              <h3>Kelaz Graphic Design</h3>
-              <p>Free online graphic design education for everyone.</p>
+              <h3>Kelaz Desain Grafis</h3>
+              <p>Pembelajaran desain grafis gratis untuk semua.</p>
             </div>
-            <div className="footer-section">
-              <h4>Quick Links</h4>
-              <ul>
-                <li><a href="#courses">Courses</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#contact">Contact</a></li>
-                <li><button onClick={onLoginClick} className="footer-link">Login</button></li>
-              </ul>
-            </div>
+              <div className="footer-section">
+              <h4>Akses</h4>
+                <ul>
+                <li><button onClick={onLoginClick} className="footer-link">Masuk</button></li>
+                </ul>
+              </div>
           </div>
           <div className="footer-bottom">
             <p>&copy; 2025 Kelaz Graphic Design Online Class. Free for everyone.</p>
