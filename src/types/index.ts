@@ -49,6 +49,8 @@ export interface QuestionDoc {
   correctIndex?: number; // untuk single choice (multiple_choice/dropdown)
   correctIndexes?: number[]; // untuk checkboxes (banyak jawaban benar)
   order?: number;
+  imageUrl?: string; // optional image path or URL (use ~/ to refer to public/ root)
+  imageAlt?: string; // alt text for the image
 }
 
 export interface AnswerDoc {
@@ -57,6 +59,8 @@ export interface AnswerDoc {
   questionId: string;
   selectedIndex: number;
   isCorrect: boolean;
+  // For text-based questions (short_answer, paragraph)
+  textAnswer?: string;
   answeredAt: Timestamp;
 }
 

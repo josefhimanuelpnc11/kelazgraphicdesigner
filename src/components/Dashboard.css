@@ -606,7 +606,7 @@
   font-size: 0.9rem;
 }
 
-.form-group input,
+.form-group input:not([type="radio"]):not([type="checkbox"]),
 .form-group select,
 .form-group textarea {
   width: 100%;
@@ -616,6 +616,37 @@
   font-size: 0.95rem;
   transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
+  background-color: #fff;
+  color: #111827;
+}
+
+/* Add a simple chevron for selects */
+.form-group select {
+  appearance: none; /* normalize only for select */
+  background-image: linear-gradient(45deg, transparent 50%, #9ca3af 50%), linear-gradient(135deg, #9ca3af 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% + 2px), calc(100% - 12px) calc(50% + 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+/* Ensure radios and checkboxes keep native appearance and are clickable */
+.form-group input[type="radio"],
+.form-group input[type="checkbox"] {
+  appearance: auto;
+  width: auto;
+  height: auto;
+  cursor: pointer;
+  accent-color: #6366f1; /* modern browsers */
+}
+
+/* Placeholder-like state for empty value */
+.form-group select.empty { color: #9ca3af; }
+
+/* Disabled select should look muted but consistent */
+.form-group select:disabled {
+  background-color: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
 }
 
 /* ===== QUIZ BUILDER INPUT ROWS ===== */
@@ -676,6 +707,24 @@
 .quiz-options input[type="radio"],
 .quiz-options input[type="checkbox"] {
   margin-right: 8px;
+}
+
+/* ===== TAKE QUIZ PAGE ENHANCEMENTS ===== */
+.take-quiz .card-content input[type="text"],
+.take-quiz .card-content textarea {
+  padding: 14px 16px;
+  font-size: 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+}
+.take-quiz .card-content textarea {
+  min-height: 140px;
+}
+.take-quiz .card-content input[type="text"]:focus,
+.take-quiz .card-content textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
 /* ===== CONTENT GRID ===== */

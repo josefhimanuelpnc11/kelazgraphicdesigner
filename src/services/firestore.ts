@@ -279,6 +279,35 @@ export const firestoreService = {
     }
   },
 
+  async getQuiz(quizId: string): Promise<(QuizDoc & { id: string }) | null> {
+    try {
+      const d = await getDoc(doc(db, 'quizzes', quizId));
+      if (!d.exists()) return null;
+      return { id: d.id, ...(d.data() as QuizDoc) };
+    } catch (error) {
+      console.error('Error getting quiz:', error);
+      return null;
+    }
+  },
+
+  async updateQuestion(quizId: string, questionId: string, data: Partial<QuestionDoc>): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'quizzes', quizId, 'questions', questionId), data as any);
+    } catch (error) {
+      console.error('Error updating question:', error);
+      throw error;
+    }
+  },
+
+  async deleteQuestion(quizId: string, questionId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'quizzes', quizId, 'questions', questionId));
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      throw error;
+    }
+  },
+
   // ===== LESSON READS (Progress) =====
   async markLessonRead(userId: string, moduleId: string, lessonId: string): Promise<void> {
     try {
@@ -310,7 +339,7 @@ export const firestoreService = {
   async replaceAnswers(
     userId: string,
     quizId: string,
-    items: Array<{ questionId: string; selectedIndex: number; isCorrect: boolean }>
+  items: Array<{ questionId: string; selectedIndex: number; isCorrect: boolean; textAnswer?: string }>
   ): Promise<void> {
     try {
       const answersRef = collection(db, 'answers');
@@ -323,18 +352,81 @@ export const firestoreService = {
       }
 
       // Write new answers
-      for (const it of items) {
+    for (const it of items) {
         await addDoc(answersRef, {
           userId,
           quizId,
           questionId: it.questionId,
           selectedIndex: it.selectedIndex,
           isCorrect: it.isCorrect,
+      ...(it.textAnswer ? { textAnswer: it.textAnswer } : {}),
           answeredAt: serverTimestamp()
         } as AnswerDoc as any);
       }
     } catch (error) {
       console.error('Error replacing answers:', error);
+      throw error;
+    }
+  },
+
+  // Latest answers per user for a quiz, grouped by userId then questionId
+  async getLatestAnswersByQuiz(quizId: string): Promise<Record<string, Record<string, AnswerDoc & { id: string }>>> {
+    try {
+      const answersRef = collection(db, 'answers');
+      const snap = await getDocs(query(answersRef, where('quizId', '==', quizId)));
+      const map: Record<string, Record<string, { id: string; doc: AnswerDoc; ts: number }>> = {};
+      snap.forEach(d => {
+        const a = d.data() as AnswerDoc;
+        const ts = (a as any).answeredAt?.toMillis?.() ?? 0;
+        const u = a.userId;
+        const q = a.questionId;
+        if (!map[u]) map[u] = {};
+        const cur = map[u][q];
+        if (!cur || ts > cur.ts) map[u][q] = { id: d.id, doc: a, ts };
+      });
+      const out: Record<string, Record<string, AnswerDoc & { id: string }>> = {};
+      Object.keys(map).forEach(uid => {
+        out[uid] = {} as any;
+        Object.keys(map[uid]).forEach(qid => {
+          const v = map[uid][qid];
+          out[uid][qid] = { id: v.id, ...(v.doc as any) };
+        });
+      });
+      return out;
+    } catch (error) {
+      console.error('Error getting latest answers by quiz:', error);
+      return {};
+    }
+  },
+
+  // Latest answers for a specific user+quiz, flat list
+  async getLatestAnswersByUserForQuiz(userId: string, quizId: string): Promise<Array<AnswerDoc & { id: string }>> {
+    try {
+      const answersRef = collection(db, 'answers');
+      const snap = await getDocs(query(answersRef, where('userId', '==', userId), where('quizId', '==', quizId)));
+      const map: Record<string, { id: string; doc: AnswerDoc; ts: number }> = {};
+      snap.forEach(d => {
+        const a = d.data() as AnswerDoc;
+        const ts = (a as any).answeredAt?.toMillis?.() ?? 0;
+        const qid = a.questionId;
+        const cur = map[qid];
+        if (!cur || ts > cur.ts) map[qid] = { id: d.id, doc: a, ts };
+      });
+      return Object.values(map)
+        .sort((a, b) => a.ts - b.ts)
+        .map(v => ({ id: v.id, ...(v.doc as any) }));
+    } catch (error) {
+      console.error('Error getting latest answers by user for quiz:', error);
+      return [];
+    }
+  },
+
+  // Manual scoring: update isCorrect for a specific answer document
+  async updateManualScore(answerId: string, isCorrect: boolean): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'answers', answerId), { isCorrect } as any);
+    } catch (error) {
+      console.error('Error updating manual score:', error);
       throw error;
     }
   },

@@ -30,6 +30,16 @@ export const ManageQuizzes: React.FC<ManageQuizzesProps> = ({ onClose }) => {
   const [granting, setGranting] = useState(false);
   const [grantCount, setGrantCount] = useState(1);
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
+  const [latestByUser, setLatestByUser] = useState<Record<string, Record<string, any>>>({});
+  const [gradingLoading, setGradingLoading] = useState(false);
+
+  const resolveImage = (pathLike?: string): string => {
+    if (!pathLike) return '';
+    if (/^https?:\/\//i.test(pathLike)) return pathLike;
+    const cleaned = pathLike.startsWith('~/') ? pathLike.slice(1) : pathLike;
+    const base = (import.meta as any).env?.BASE_URL || '/';
+    return (base + cleaned.replace(/^\//, '')).replace(/\/+/g, '/');
+  };
 
   const load = async () => {
     try {
@@ -54,10 +64,7 @@ export const ManageQuizzes: React.FC<ManageQuizzesProps> = ({ onClose }) => {
 
   useEffect(() => { load(); }, []);
 
-  const startEdit = (q: QuizDoc & { id: string }) => {
-    setEditingId(q.id);
-    setForm({ title: q.title, timeLimitMin: Math.max(1, Math.round((q.timeLimitSec ?? 600) / 60)) });
-  };
+  // inline edit of quiz info disabled in favor of full edit page
 
   const saveEdit = async () => {
     if (!editingId) return;
@@ -97,6 +104,14 @@ export const ManageQuizzes: React.FC<ManageQuizzesProps> = ({ onClose }) => {
       } finally {
         setLoadingQuestions(null);
       }
+    }
+  // Also fetch latest answers for manual grading view
+    setGradingLoading(true);
+    try {
+      const latest = await firestoreService.getLatestAnswersByQuiz(quizId);
+      setLatestByUser(latest as any);
+    } finally {
+      setGradingLoading(false);
     }
   };
 
@@ -181,7 +196,7 @@ export const ManageQuizzes: React.FC<ManageQuizzesProps> = ({ onClose }) => {
                           <button className="btn-action" onClick={() => toggleExpand(q.id)}>
                             {expandedId === q.id ? 'Tutup' : 'Lihat'}
                           </button>
-                          <button className="btn-action edit" onClick={() => startEdit(q)}>
+                          <button className="btn-action edit" onClick={() => { window.location.hash = `#/dashboard/edit-quiz/${q.id}`; }}>
                             Edit
                           </button>
                           <button className="btn-action" onClick={() => openRetakeManager(q.id)}>
@@ -215,6 +230,7 @@ export const ManageQuizzes: React.FC<ManageQuizzesProps> = ({ onClose }) => {
                           <span>Waktu: {Math.floor((q.timeLimitSec ?? 600) / 60)} menit</span>
                         </div>
                         {expandedId === q.id && (
+                          <>
                           <div style={{ marginTop: 12 }}>
                             <h5 style={{ margin: '8px 0' }}>Pertanyaan</h5>
                             {loadingQuestions === q.id && <div style={{ color: '#64748b' }}>Memuat pertanyaan...</div>}
@@ -224,8 +240,13 @@ export const ManageQuizzes: React.FC<ManageQuizzesProps> = ({ onClose }) => {
                             {questionMap[q.id] && questionMap[q.id].length > 0 && (
                               <ul style={{ paddingLeft: 16, margin: 0 }}>
                                 {questionMap[q.id].map((ques, idx) => (
-                                  <li key={ques.id} style={{ marginBottom: 8 }}>
+                                  <li key={ques.id} style={{ marginBottom: 12 }}>
                                     <div style={{ fontWeight: 600 }}>{idx + 1}. {ques.text}</div>
+                                    {ques.imageUrl && (
+                                      <div style={{ margin: '6px 0' }}>
+                                        <img src={resolveImage(ques.imageUrl)} alt={ques.imageAlt || 'Ilustrasi'} style={{ maxWidth: '100%', borderRadius: 8 }} />
+                                      </div>
+                                    )}
                                     {['multiple_choice', 'checkboxes', 'dropdown'].includes(ques.type) && (
                                       <div style={{ marginTop: 4, color: '#475569' }}>
                                         {(ques.options || []).map((opt, i) => {
@@ -241,6 +262,59 @@ export const ManageQuizzes: React.FC<ManageQuizzesProps> = ({ onClose }) => {
                               </ul>
                             )}
                           </div>
+                          {/* Manual grading & last answers */}
+                          <div style={{ marginTop: 16 }}>
+                            <h5 style={{ margin: '8px 0' }}>Penilaian Manual & Jawaban Terakhir</h5>
+                            {gradingLoading && <div style={{ color: '#64748b' }}>Memuat jawaban...</div>}
+                            {!gradingLoading && students.length === 0 && (
+                              <div className="empty-state">Belum ada siswa</div>
+                            )}
+                            {!gradingLoading && students.length > 0 && (
+                              <div className="content-grid" style={{ gridTemplateColumns: '1fr' }}>
+                                {students.map(s => (
+                                  <div key={s.id} className="content-card">
+                                    <div className="card-content">
+                                      <div style={{ fontWeight: 600, marginBottom: 6 }}>{s.name || s.email}</div>
+                                      {questionMap[q.id]?.map((ques) => {
+                                        const a = latestByUser[s.id]?.[ques.id];
+                                        const isText = ques.type === 'short_answer' || ques.type === 'paragraph';
+                                        return (
+                                          <div key={ques.id} style={{ padding: '8px 0', borderTop: '1px solid #f1f5f9' }}>
+                                            <div style={{ fontWeight: 500 }}>{ques.text}</div>
+                                            {ques.imageUrl && (
+                                              <img src={resolveImage(ques.imageUrl)} alt={ques.imageAlt || 'Ilustrasi'} style={{ maxWidth: '100%', borderRadius: 6, marginTop: 6 }} />
+                                            )}
+                                            <div style={{ color: '#475569', marginTop: 6 }}>
+                                              {a ? (
+                                                isText ? (
+                                                  <>
+                                                    <div style={{ whiteSpace: 'pre-wrap', background: '#f8fafc', padding: 8, borderRadius: 6 }}>{a.textAnswer || '(kosong)'}</div>
+                                                    <div className="form-actions" style={{ gap: 8, marginTop: 8 }}>
+                                                      <button className="btn-action primary" onClick={async () => { await firestoreService.updateManualScore(a.id, true); const latest = await firestoreService.getLatestAnswersByQuiz(q.id); setLatestByUser(latest as any); }}>Tandai Benar</button>
+                                                      <button className="btn-action delete" onClick={async () => { await firestoreService.updateManualScore(a.id, false); const latest = await firestoreService.getLatestAnswersByQuiz(q.id); setLatestByUser(latest as any); }}>Tandai Salah</button>
+                                                      <span style={{ color: a.isCorrect ? '#16a34a' : '#ef4444' }}>{a.isCorrect ? '✓ Benar' : '✗ Salah'}</span>
+                                                    </div>
+                                                  </>
+                                                ) : (
+                                                  <>
+                                                    <span>Jawaban: {a.selectedIndex >= 0 ? `Pilihan #${a.selectedIndex + 1}` : '—'}</span>
+                                                    <span style={{ marginLeft: 8, color: a.isCorrect ? '#16a34a' : '#ef4444' }}>{a.isCorrect ? '✓' : '✗'}</span>
+                                                  </>
+                                                )
+                                              ) : (
+                                                <span style={{ color: '#9ca3af' }}>Belum ada jawaban</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          </>
                         )}
                       </>
                     )}

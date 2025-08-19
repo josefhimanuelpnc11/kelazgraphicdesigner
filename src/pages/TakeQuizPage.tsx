@@ -55,6 +55,7 @@ const TakeQuizPage: React.FC = () => {
     // Build flat answers: for simplicity, only auto-grade single-index types
     return questions.map(q => {
       let selectedIndex = -1;
+      let textAnswer: string | undefined = undefined;
       if (q.type === 'multiple_choice' || q.type === 'dropdown') {
         selectedIndex = typeof answers[q.id] === 'number' ? answers[q.id] : -1;
       } else if (q.type === 'checkboxes') {
@@ -62,11 +63,12 @@ const TakeQuizPage: React.FC = () => {
         const arr: number[] = Array.isArray(answers[q.id]) ? answers[q.id] : [];
         selectedIndex = arr.length ? -2 : -1; // sentinel for multi
       } else {
-        // text types, store as -1 (not auto-graded)
+        // text types, store as -1 (not auto-graded) + capture text
         selectedIndex = -1;
+        textAnswer = typeof answers[q.id] === 'string' ? (answers[q.id] as string) : '';
       }
       const isCorrect = typeof q.correctIndex === 'number' && selectedIndex === q.correctIndex;
-      return { questionId: q.id, selectedIndex, isCorrect };
+      return { questionId: q.id, selectedIndex, isCorrect, textAnswer };
     });
   }, [questions, answers]);
 
@@ -163,7 +165,7 @@ const TakeQuizPage: React.FC = () => {
   const showRetakeInfo = alreadyDone && retakeAllowed > 0;
 
   return (
-    <div className="dashboard-main">
+    <div className="dashboard-main take-quiz">
       <div className="container">
         <div className="card" style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ marginBottom: 8 }}>
@@ -184,6 +186,16 @@ const TakeQuizPage: React.FC = () => {
                 <div key={q.id} className="content-card">
                   <div className="card-content">
                     <h4 style={{ marginTop: 0 }}>Pertanyaan {idx + 1}</h4>
+                    {q.imageUrl && (
+                      <div style={{ marginBottom: 10 }}>
+                        <img
+                          src={resolveImage(q.imageUrl)}
+                          alt={q.imageAlt || 'Ilustrasi pertanyaan'}
+                          style={{ maxWidth: '100%', height: 'auto', borderRadius: 8, display: 'block' }}
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
                     <p style={{ whiteSpace: 'pre-wrap' }}>{q.text}</p>
                     {q.type === 'multiple_choice' && q.options && (
                       <div className="quiz-options">
@@ -232,10 +244,26 @@ const TakeQuizPage: React.FC = () => {
                       </select>
                     )}
                     {q.type === 'short_answer' && (
-                      <input type="text" className="input" placeholder="Jawaban singkat" value={answers[q.id] ?? ''} onChange={(e) => setAnswers(a => ({ ...a, [q.id]: e.target.value }))} />
+                      <div className="form-group">
+                        <input
+                          type="text"
+                          className="w-full p-4 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          placeholder="Jawaban singkat"
+                          value={answers[q.id] ?? ''}
+                          onChange={(e) => setAnswers(a => ({ ...a, [q.id]: e.target.value }))}
+                        />
+                      </div>
                     )}
                     {q.type === 'paragraph' && (
-                      <textarea className="input" placeholder="Jawaban panjang" rows={4} value={answers[q.id] ?? ''} onChange={(e) => setAnswers(a => ({ ...a, [q.id]: e.target.value }))} />
+                      <div className="form-group">
+                        <textarea
+                          className="w-full p-4 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[140px] md:min-h-[180px] resize-y"
+                          placeholder="Jawaban panjang"
+                          rows={6}
+                          value={answers[q.id] ?? ''}
+                          onChange={(e) => setAnswers(a => ({ ...a, [q.id]: e.target.value }))}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
@@ -250,5 +278,17 @@ const TakeQuizPage: React.FC = () => {
     </div>
   );
 };
+
+// Helper to resolve image path supporting public/ base path and ~/ shorthand
+function resolveImage(pathLike?: string): string {
+  if (!pathLike) return '';
+  if (/^https?:\/\//i.test(pathLike)) return pathLike;
+  // '~/...' maps to public root; Vite serves from '/'
+  const cleaned = pathLike.startsWith('~/') ? pathLike.slice(1) : pathLike;
+  // Respect Vite base path for GH Pages
+  const base = (import.meta as any).env?.BASE_URL || '/';
+  // Avoid double slashes
+  return (base + cleaned.replace(/^\//, '')).replace(/\/+/g, '/');
+}
 
 export default TakeQuizPage;

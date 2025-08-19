@@ -8,6 +8,7 @@ import LearnPage from './pages/LearnPage';
 import QuizzesPage from './pages/QuizzesPage';
 import LessonPage from './pages/LessonPage';
 import TakeQuizPage from './pages/TakeQuizPage';
+import EditQuizPage from './pages/EditQuizPage';
 import './App.css';
 
 function Protected({ children }: { children: React.ReactElement }) {
@@ -120,6 +121,14 @@ function App() {
           element={
             <Protected>
               <TakeQuizPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/dashboard/edit-quiz/:quizId"
+          element={
+            <Protected>
+              <EditQuizPage />
             </Protected>
           }
         />

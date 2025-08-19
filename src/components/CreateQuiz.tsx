@@ -7,10 +7,16 @@ interface CreateQuizProps {
 }
 
 export const CreateQuiz: React.FC<CreateQuizProps> = ({ onClose }) => {
+  // Cloudinary config (unsigned upload)
+  const CLOUDINARY_CLOUD_NAME = 'dgkh8fleg';
+  const CLOUDINARY_UPLOAD_PRESET = 'kelazgraphicdesigner';
+
   const [modules, setModules] = useState<(ModuleDoc & { id: string })[]>([]);
   const [lessons, setLessons] = useState<(LessonDoc & { id: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<'quiz-info' | 'questions'>('quiz-info');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const [quizForm, setQuizForm] = useState({
     moduleId: '',
@@ -25,7 +31,9 @@ export const CreateQuiz: React.FC<CreateQuizProps> = ({ onClose }) => {
     text: '',
     options: ['', '', ''],
     correctIndex: 0,
-    correctIndexes: [],
+  correctIndexes: [],
+  imageUrl: '',
+  imageAlt: '',
   });
 
   useEffect(() => {
@@ -130,6 +138,8 @@ export const CreateQuiz: React.FC<CreateQuizProps> = ({ onClose }) => {
       options: ['', '', ''],
       correctIndex: 0,
       correctIndexes: [],
+      imageUrl: '',
+      imageAlt: '',
     });
   };
 
@@ -163,6 +173,25 @@ export const CreateQuiz: React.FC<CreateQuizProps> = ({ onClose }) => {
       setLoading(false);
     }
   };
+
+  async function uploadToCloudinary(file: File): Promise<{ secure_url: string }> {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+      method: 'POST',
+      body: fd,
+    });
+    if (!res.ok) {
+      throw new Error('Upload gagal');
+    }
+    return res.json();
+  }
+
+  function withOptimized(url: string): string {
+    // Insert delivery transforms for auto format/quality and max width
+    return url.replace('/upload/', '/upload/f_auto,q_auto,w_1600,c_limit/');
+  }
 
   if (loading) {
     return (
@@ -198,11 +227,12 @@ export const CreateQuiz: React.FC<CreateQuizProps> = ({ onClose }) => {
               <div className="form-card">
                 <h4>Informasi Kuis</h4>
                 <div className="form-row">
-                  <div className="form-group">
+          <div className="form-group">
                     <label>Pilih Bab *</label>
                     <select
                       value={quizForm.moduleId}
-                      onChange={(e) => setQuizForm({ ...quizForm, moduleId: e.target.value })}
+            onChange={(e) => setQuizForm({ ...quizForm, moduleId: e.target.value })}
+            className={!quizForm.moduleId ? 'empty' : undefined}
                     >
                       <option value="">-- Pilih Bab --</option>
                       {modules.map((m) => (
@@ -216,6 +246,7 @@ export const CreateQuiz: React.FC<CreateQuizProps> = ({ onClose }) => {
                       value={quizForm.lessonId}
                       onChange={(e) => setQuizForm({ ...quizForm, lessonId: e.target.value })}
                       disabled={!quizForm.moduleId}
+            className={!quizForm.lessonId ? 'empty' : undefined}
                     >
                       <option value="">-- Pilih Materi --</option>
                       {lessons.map((l) => (
@@ -296,12 +327,59 @@ export const CreateQuiz: React.FC<CreateQuizProps> = ({ onClose }) => {
                   />
                 </div>
 
+                <div className="form-row">
+                  <div className="form-group" style={{ flex: 2 }}>
+                    <label>Gambar (opsional)</label>
+                    <input
+                      type="text"
+                      value={currentQuestion.imageUrl || ''}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, imageUrl: e.target.value })}
+                      placeholder="Tempel URL gambar atau upload file di bawah"
+                    />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          try {
+                            setUploadError(null);
+                            setUploading(true);
+                            const out = await uploadToCloudinary(f);
+                            const optimized = withOptimized(out.secure_url);
+                            setCurrentQuestion((q) => ({ ...q, imageUrl: optimized }));
+                          } catch (err: any) {
+                            setUploadError(err?.message || 'Upload gagal');
+                          } finally {
+                            setUploading(false);
+                          }
+                        }}
+                      />
+                      {uploading && <span style={{ color: '#64748b' }}>Mengunggah...</span>}
+                    </div>
+                    {uploadError && <p style={{ color: '#ef4444', marginTop: 6 }}>{uploadError}</p>}
+                    <p style={{ color: '#64748b', fontSize: 12, marginTop: 6 }}>
+                      Tips: format/quality otomatis dengan <code>f_auto,q_auto</code> dan lebar maks <code>w_1600</code> sudah diterapkan.
+                    </p>
+                  </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Alt text</label>
+                    <input
+                      type="text"
+                      value={currentQuestion.imageAlt || ''}
+                      onChange={(e) => setCurrentQuestion({ ...currentQuestion, imageAlt: e.target.value })}
+                      placeholder="Deskripsi gambar"
+                    />
+                  </div>
+                </div>
+
                 {['multiple_choice', 'checkboxes', 'dropdown'].includes(currentQuestion.type) && (
                   <div className="form-group">
                     <label>Pilihan</label>
                     {(currentQuestion.options || []).map((option, index) => (
                       <div key={index} className="option-row">
-                        {currentQuestion.type === 'checkboxes' ? (
+            {currentQuestion.type === 'checkboxes' ? (
                           <input
                             type="checkbox"
                             checked={(currentQuestion.correctIndexes || []).includes(index)}
@@ -316,7 +394,7 @@ export const CreateQuiz: React.FC<CreateQuizProps> = ({ onClose }) => {
                             type="radio"
                             name="correct"
                             checked={(currentQuestion.correctIndex ?? 0) === index}
-                            onChange={() => setCurrentQuestion({ ...currentQuestion, correctIndex: index })}
+              onChange={() => setCurrentQuestion({ ...currentQuestion, correctIndex: index })}
                           />
                         )}
                         <input
@@ -365,6 +443,13 @@ export const CreateQuiz: React.FC<CreateQuizProps> = ({ onClose }) => {
                           <h4>
                             {q.type === 'multiple_choice' ? 'Multiple Choice' : q.type === 'checkboxes' ? 'Checkboxes' : q.type === 'dropdown' ? 'Dropdown' : q.type === 'short_answer' ? 'Short Answer' : 'Paragraph'}
                           </h4>
+                          {q.imageUrl && (
+                            <img
+                              src={q.imageUrl}
+                              alt={q.imageAlt || ''}
+                              style={{ maxWidth: '100%', height: 'auto', borderRadius: 8, marginBottom: 8 }}
+                            />
+                          )}
                           <p>{q.text}</p>
                           {['multiple_choice', 'checkboxes', 'dropdown'].includes(q.type) && (
                             <div className="card-meta" style={{ display: 'block', color: '#475569' }}>
