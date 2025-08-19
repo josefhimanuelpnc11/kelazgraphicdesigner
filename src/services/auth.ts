@@ -12,13 +12,9 @@ import type { UserDoc, UserRole, UserStatus } from '../types';
 
 export const authService = {
   // Helper function to determine user role based on email
-  getUserRole(email: string): UserRole {
-    // Special email for teacher
-    if (email === 'josefhimanuel123@gmail.com') {
-      return 'teacher';
-    }
-    // Default role for all other users
-    return 'student';
+  getUserRole(_email?: string): UserRole {
+  // Default role for all users (teachers managed in Firestore by admin)
+  return 'student';
   },
 
   // Register with email and password
@@ -53,12 +49,8 @@ export const authService = {
       const userCredential: UserCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Check and update role if needed for teacher email
-      const userDoc = await this.getUserFromFirestore(user.uid);
-      if (userDoc && email === 'josefhimanuel123@gmail.com' && userDoc.role !== 'teacher') {
-        console.log('Updating existing user role to teacher');
-        await this.updateUserRole(user.uid, 'teacher');
-      }
+  // Load user profile to ensure it exists for downstream consumers
+  await this.getUserFromFirestore(user.uid);
       
       return user;
     } catch (error) {
@@ -72,11 +64,9 @@ export const authService = {
     try {
       const userCredential: UserCredential = await signInWithPopup(auth, googleProvider);
       const user = userCredential.user;
-      
-      // Check if user exists in Firestore, if not create profile
-      const userDoc = await this.getUserFromFirestore(user.uid);
-      if (!userDoc) {
-        // Determine role based on email
+      // Ensure Firestore profile exists; create default student if missing
+      const existing = await this.getUserFromFirestore(user.uid);
+      if (!existing) {
         const userRole = this.getUserRole(user.email || '');
         const status: UserStatus = userRole === 'teacher' ? 'approved' : 'pending';
         await this.saveUserToFirestore(user.uid, {
@@ -86,14 +76,7 @@ export const authService = {
           status,
           createdAt: serverTimestamp() as any
         });
-      } else {
-        // Check if existing user needs role update
-        if (user.email === 'josefhimanuel123@gmail.com' && userDoc.role !== 'teacher') {
-          console.log('Updating existing Google user role to teacher');
-          await this.updateUserRole(user.uid, 'teacher');
-        }
       }
-      
       return user;
     } catch (error) {
       console.error('Google login error:', error);
@@ -126,17 +109,8 @@ export const authService = {
     try {
       const docSnap = await getDoc(doc(db, 'users', uid));
       if (docSnap.exists()) {
-        const userData = docSnap.data() as UserDoc;
-        
-        // Check if we need to update role for teacher email
-        if (userData.email === 'josefhimanuel123@gmail.com' && userData.role !== 'teacher') {
-          console.log('Updating role to teacher for:', userData.email);
-          const updatedData = { ...userData, role: 'teacher' as UserRole };
-          await this.saveUserToFirestore(uid, updatedData);
-          return updatedData;
-        }
-        
-        return userData;
+  const userData = docSnap.data() as UserDoc;
+  return userData;
       }
       return null;
     } catch (error) {

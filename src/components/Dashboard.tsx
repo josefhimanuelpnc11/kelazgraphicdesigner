@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useDashboardData } from '../hooks/useDashboardData';
 import { useStudentDashboard } from '../hooks/useStudentDashboard';
-import { authService } from '../services/auth';
 import { ManageContent } from './ManageContent';
 import { CreateQuiz } from './CreateQuiz';
 import { ManageQuizzes } from './ManageQuizzes';
@@ -39,18 +38,6 @@ export const Dashboard = () => {
     }
   };
 
-  // Debug function to force update role (only for josefhimanuel123@gmail.com)
-  const handleForceUpdateRole = async () => {
-    if (user && userDoc?.email === 'josefhimanuel123@gmail.com') {
-      try {
-        await authService.updateUserRole(user.uid, 'teacher');
-        // Force page reload to reflect changes
-        window.location.reload();
-      } catch (error) {
-        console.error('Error updating role:', error);
-      }
-    }
-  };
 
   const handleCreateSampleData = async () => {
     if (user && isTeacher) {
@@ -105,12 +92,6 @@ export const Dashboard = () => {
             <span className={`user-role ${userDoc.role}`}>
               {userDoc.role === 'teacher' ? '👨‍🏫 Guru' : '👨‍🎓 Siswa'}
             </span>
-            {/* Debug button for josefhimanuel123@gmail.com */}
-            {userDoc.email === 'josefhimanuel123@gmail.com' && userDoc.role !== 'teacher' && (
-              <button onClick={handleForceUpdateRole} className="btn-update-role">
-                🔄 Perbaiki Role Guru
-              </button>
-            )}
             <button onClick={handleLogout} className="btn-logout">
               Keluar
             </button>
