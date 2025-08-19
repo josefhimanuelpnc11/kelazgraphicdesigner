@@ -15,6 +15,7 @@ export interface ModuleDoc {
   createdBy: string; // uid guru
   createdAt: Timestamp;
   order?: number;
+  visible?: boolean; // default true; if false, sembunyikan dari siswa
 }
 
 export interface LessonDoc {

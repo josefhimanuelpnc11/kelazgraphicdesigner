@@ -22,7 +22,8 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
   const [moduleForm, setModuleForm] = useState({
     title: '',
     description: '',
-    order: 1
+  order: 1,
+  visible: true
   });
 
   const [lessonForm, setLessonForm] = useState({
@@ -34,7 +35,8 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
   const [moduleEditForm, setModuleEditForm] = useState({
     title: '',
     description: '',
-    order: 1
+  order: 1,
+  visible: true
   });
   const [lessonEditForm, setLessonEditForm] = useState({
     title: '',
@@ -86,9 +88,10 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
         title: moduleForm.title,
         description: moduleForm.description,
         createdBy: 'current-user', // TODO: get from auth context
-        order: moduleForm.order
+        order: moduleForm.order,
+        visible: moduleForm.visible
       });
-      setModuleForm({ title: '', description: '', order: 1 });
+      setModuleForm({ title: '', description: '', order: 1, visible: true });
       setShowAddModule(false);
       loadData();
     } catch (error) {
@@ -118,7 +121,7 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
 
   const startEditModule = (m: ModuleDoc & { id: string }) => {
     setEditingModuleId(m.id);
-    setModuleEditForm({ title: m.title, description: m.description ?? '', order: m.order || 1 });
+  setModuleEditForm({ title: m.title, description: m.description ?? '', order: m.order || 1, visible: m.visible ?? true });
   };
 
   const saveEditModule = async () => {
@@ -126,7 +129,8 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
       await firestoreService.updateModule(editingModuleId, {
         title: moduleEditForm.title,
         description: moduleEditForm.description,
-        order: moduleEditForm.order
+        order: moduleEditForm.order,
+        visible: moduleEditForm.visible
       });
       setEditingModuleId('');
       await loadData();
@@ -278,6 +282,13 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
                         required
                       />
                     </div>
+                    <div className="form-group">
+                      <label>Tampilkan ke siswa</label>
+                      <select value={moduleForm.visible ? '1' : '0'} onChange={(e)=>setModuleForm({...moduleForm, visible: e.target.value==='1'})}>
+                        <option value="1">Ya</option>
+                        <option value="0">Tidak</option>
+                      </select>
+                    </div>
                     <div className="form-actions">
                       <button type="submit" className="btn-primary">
                         <i className="fas fa-save"></i>
@@ -341,6 +352,13 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
                               <div className="form-group">
                                 <label>Urutan</label>
                                 <input type="number" min={1} value={moduleEditForm.order} onChange={e=>setModuleEditForm({...moduleEditForm,order:parseInt(e.target.value)})} />
+                              </div>
+                              <div className="form-group">
+                                <label>Tampilkan ke siswa</label>
+                                <select value={(moduleEditForm.visible ? '1' : '0')} onChange={(e)=>setModuleEditForm({...moduleEditForm, visible: e.target.value==='1'})}>
+                                  <option value="1">Ya</option>
+                                  <option value="0">Tidak</option>
+                                </select>
                               </div>
                               <div className="form-actions small">
                                 <button className="btn-primary" onClick={saveEditModule}>Simpan</button>

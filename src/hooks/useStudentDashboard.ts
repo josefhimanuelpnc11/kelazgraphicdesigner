@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { firestoreService } from '../services/firestore';
-import type { AnswerDoc, ModuleDoc, QuizDoc, EnrollmentDoc } from '../types';
+import type { AnswerDoc, ModuleDoc, QuizDoc } from '../types';
 
 export interface ModuleProgress {
   moduleId: string;
@@ -24,7 +24,6 @@ export const useStudentDashboard = (userId?: string | null): StudentDashboardSta
   const [quizzes, setQuizzes] = useState<(QuizDoc & { id: string })[]>([]);
   const [answers, setAnswers] = useState<(AnswerDoc & { id: string })[]>([]);
   const [modules, setModules] = useState<(ModuleDoc & { id: string })[]>([]);
-  const [enrollments, setEnrollments] = useState<(EnrollmentDoc & { id: string })[]>([]);
 
   useEffect(() => {
     const run = async () => {
@@ -32,16 +31,14 @@ export const useStudentDashboard = (userId?: string | null): StudentDashboardSta
       setLoading(true);
       setError(null);
       try {
-        const [qz, ans, mods, enr] = await Promise.all([
+        const [qz, ans, mods] = await Promise.all([
           firestoreService.getQuizzes(),
           firestoreService.getAnswersByUser(userId),
           firestoreService.getModules(),
-          firestoreService.getEnrollmentsByUser(userId),
         ]);
         setQuizzes(qz);
         setAnswers(ans);
         setModules(mods);
-        setEnrollments(enr);
       } catch (e: any) {
         setError(e?.message || 'Gagal memuat data siswa');
       } finally {
@@ -52,10 +49,10 @@ export const useStudentDashboard = (userId?: string | null): StudentDashboardSta
   }, [userId]);
 
   const { totalQuizzes, completedQuizzes, averageScore, progressPercent, moduleProgress } = useMemo(() => {
-    // Only include modules the user is enrolled in
-    const enrolledModuleIds = new Set(enrollments.map(e => e.moduleId));
-    const visibleQuizzes = quizzes.filter(q => !q.moduleId || enrolledModuleIds.has(q.moduleId));
-    const visibleModules = modules.filter(m => enrolledModuleIds.has(m.id));
+  // Auto-enroll concept: show all visible modules to every student
+  const visibleModules = modules.filter(m => (m as any).visible ?? true);
+  const visibleModuleIds = new Set(visibleModules.map(m => m.id));
+  const visibleQuizzes = quizzes.filter(q => !q.moduleId || visibleModuleIds.has(q.moduleId));
     const totalQuizzes = visibleQuizzes.length;
 
     // Completed quizzes: any quiz that has at least one answer by this user
@@ -94,7 +91,7 @@ export const useStudentDashboard = (userId?: string | null): StudentDashboardSta
     });
 
     return { totalQuizzes, completedQuizzes, averageScore: Math.round(averageScore), progressPercent, moduleProgress };
-  }, [quizzes, answers, modules, enrollments]);
+  }, [quizzes, answers, modules]);
 
   return { loading, error, totalQuizzes, completedQuizzes, averageScore, progressPercent, moduleProgress };
 };

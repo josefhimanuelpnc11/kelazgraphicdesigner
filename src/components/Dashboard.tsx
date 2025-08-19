@@ -133,7 +133,7 @@ export const Dashboard = () => {
                     </div>
                     <span>{studentStats.progressPercent}% Selesai</span>
                   </div>
-                  <button className="btn-primary">Lanjutkan Belajar</button>
+                  <button className="btn-primary" onClick={() => { window.location.hash = '#/belajar'; }}>Lanjutkan Belajar</button>
                 </div>
 
                 <div className="card">
@@ -149,7 +149,7 @@ export const Dashboard = () => {
                       <span>Rata-rata Nilai</span>
                     </div>
                   </div>
-                  <button className="btn-secondary">Ikuti Kuis</button>
+                  <button className="btn-secondary" onClick={() => { window.location.hash = '#/kuis'; }}>Ikuti Kuis</button>
                 </div>
 
                 <div className="card">
