@@ -2,11 +2,15 @@ import { Timestamp } from 'firebase/firestore';
 
 export type UserRole = 'student' | 'teacher';
 
+export type UserStatus = 'pending' | 'approved' | 'rejected';
+
 export interface UserDoc {
   name: string;
   email: string;
   role: UserRole;
+  status?: UserStatus; // default approved for legacy; new students start as pending
   createdAt: Timestamp;
+  approvedAt?: Timestamp;
 }
 
 export interface ModuleDoc {
@@ -24,6 +28,7 @@ export interface LessonDoc {
   assets?: string[]; // URLs storage
   order?: number;
   createdAt: Timestamp;
+  visible?: boolean; // default true; students only see visible lessons
 }
 
 export interface QuizDoc {
@@ -60,9 +65,26 @@ export interface ProgressDoc {
   updatedAt: Timestamp;
 }
 
+// Track lesson completion per user
+export interface LessonReadDoc {
+  userId: string;
+  moduleId: string;
+  lessonId: string;
+  readAt: Timestamp;
+}
+
 // Enrollment links a student to a module (class membership)
 export interface EnrollmentDoc {
   userId: string;
   moduleId: string;
   enrolledAt: Timestamp;
+}
+
+// Teacher-granted retake permission per quiz per student
+export interface RetakeGrantDoc {
+  userId: string;
+  quizId: string;
+  allowed: number; // remaining attempts
+  grantedBy: string; // uid teacher
+  grantedAt: Timestamp;
 }

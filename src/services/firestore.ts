@@ -13,7 +13,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import type { ModuleDoc, LessonDoc, QuizDoc, QuestionDoc, AnswerDoc, ProgressDoc, UserDoc, EnrollmentDoc } from '../types';
+import type { ModuleDoc, LessonDoc, QuizDoc, QuestionDoc, AnswerDoc, ProgressDoc, UserDoc, EnrollmentDoc, LessonReadDoc, RetakeGrantDoc, UserStatus } from '../types';
 
 export const firestoreService = {
   // ===== MODULES =====
@@ -187,19 +187,12 @@ export const firestoreService = {
   async getQuizzes(moduleId?: string): Promise<(QuizDoc & { id: string })[]> {
     try {
       const quizzesRef = collection(db, 'quizzes');
-      let q;
-      
-      if (moduleId) {
-        q = query(quizzesRef, where('moduleId', '==', moduleId), orderBy('createdAt', 'desc'));
-      } else {
-        q = query(quizzesRef, orderBy('createdAt', 'desc'));
-      }
-      
-      const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data() as QuizDoc
-      }));
+  // Use simple orderBy to avoid composite index; filter client-side if moduleId provided
+  const q = query(quizzesRef, orderBy('createdAt', 'desc'));
+  const snapshot = await getDocs(q);
+  let items = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as QuizDoc) }));
+  if (moduleId) items = items.filter(qz => qz.moduleId === moduleId);
+  return items;
     } catch (error) {
       console.error('Error getting quizzes:', error);
       return [];
@@ -286,31 +279,140 @@ export const firestoreService = {
     }
   },
 
+  // ===== LESSON READS (Progress) =====
+  async markLessonRead(userId: string, moduleId: string, lessonId: string): Promise<void> {
+    try {
+      // Idempotent: deterministic doc id `${userId}_${moduleId}_${lessonId}`
+      const id = `${userId}_${moduleId}_${lessonId}`;
+      await (await import('firebase/firestore')).setDoc(
+        doc(db, 'lessonReads', id),
+        { userId, moduleId, lessonId, readAt: serverTimestamp() } as any,
+        { merge: true }
+      );
+    } catch (error) {
+      // Fallback: if update fails due to missing doc, attempt add once
+      console.error('Error marking lesson read:', error);
+    }
+  },
+
+  async getLessonReadsByUser(userId: string): Promise<(LessonReadDoc & { id: string })[]> {
+    try {
+      const ref = collection(db, 'lessonReads');
+      const snap = await getDocs(query(ref, where('userId', '==', userId)));
+      return snap.docs.map(d => ({ id: d.id, ...(d.data() as LessonReadDoc) }));
+    } catch (error) {
+      console.error('Error getting lesson reads:', error);
+      return [];
+    }
+  },
+
   // ===== ANSWERS =====
+  async replaceAnswers(
+    userId: string,
+    quizId: string,
+    items: Array<{ questionId: string; selectedIndex: number; isCorrect: boolean }>
+  ): Promise<void> {
+    try {
+      const answersRef = collection(db, 'answers');
+      // Delete previous answers for this user+quiz (single attempt policy)
+      const prev = await getDocs(query(answersRef, where('userId', '==', userId), where('quizId', '==', quizId)));
+      if (!prev.empty) {
+        const batch = writeBatch(db);
+        prev.forEach(d => batch.delete(doc(db, 'answers', d.id)));
+        await batch.commit();
+      }
+
+      // Write new answers
+      for (const it of items) {
+        await addDoc(answersRef, {
+          userId,
+          quizId,
+          questionId: it.questionId,
+          selectedIndex: it.selectedIndex,
+          isCorrect: it.isCorrect,
+          answeredAt: serverTimestamp()
+        } as AnswerDoc as any);
+      }
+    } catch (error) {
+      console.error('Error replacing answers:', error);
+      throw error;
+    }
+  },
+
   async getAnswersByUser(userId: string, quizId?: string): Promise<(AnswerDoc & { id: string })[]> {
     try {
       const answersRef = collection(db, 'answers');
-      let q;
-      
-      if (quizId) {
-        q = query(
-          answersRef,
-          where('userId', '==', userId),
-          where('quizId', '==', quizId),
-          orderBy('answeredAt', 'desc')
-        );
-      } else {
-        q = query(answersRef, where('userId', '==', userId), orderBy('answeredAt', 'desc'));
-      }
-      
+      // Simpler query to avoid composite indexes; sort and filter client-side
+      const q = query(answersRef, where('userId', '==', userId));
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data() as AnswerDoc
-      }));
+      let items = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as AnswerDoc) }));
+      if (quizId) items = items.filter(a => a.quizId === quizId);
+      items.sort((a, b) => {
+        const at = (a as any).answeredAt?.toMillis?.() ?? 0;
+        const bt = (b as any).answeredAt?.toMillis?.() ?? 0;
+        return bt - at;
+      });
+      return items;
     } catch (error) {
       console.error('Error getting answers:', error);
       return [];
+    }
+  },
+
+  // ===== RETAKE GRANTS =====
+  async getRetakeGrant(userId: string, quizId: string): Promise<(RetakeGrantDoc & { id: string }) | null> {
+    try {
+      const ref = collection(db, 'retakeGrants');
+      const snap = await getDocs(query(ref, where('userId', '==', userId), where('quizId', '==', quizId)));
+      if (snap.empty) return null;
+      const d = snap.docs[0];
+      return { id: d.id, ...(d.data() as RetakeGrantDoc) };
+    } catch (error) {
+      console.error('Error getting retake grant:', error);
+      return null;
+    }
+  },
+
+  async grantRetake(userId: string, quizId: string, count: number, grantedBy: string): Promise<string> {
+    try {
+      const ref = collection(db, 'retakeGrants');
+      // Upsert: if exists, increment allowed; else create
+      const existing = await getDocs(query(ref, where('userId', '==', userId), where('quizId', '==', quizId)));
+      if (!existing.empty) {
+        const d = existing.docs[0];
+        const curr = (d.data() as RetakeGrantDoc).allowed || 0;
+        await updateDoc(doc(db, 'retakeGrants', d.id), { allowed: Math.max(0, curr + count), grantedBy, grantedAt: serverTimestamp() } as any);
+        return d.id;
+      }
+      const created = await addDoc(ref, { userId, quizId, allowed: Math.max(0, count), grantedBy, grantedAt: serverTimestamp() } as any);
+      return created.id;
+    } catch (error) {
+      console.error('Error granting retake:', error);
+      throw error;
+    }
+  },
+
+  async consumeRetake(userId: string, quizId: string): Promise<boolean> {
+    try {
+      const grant = await this.getRetakeGrant(userId, quizId);
+      if (!grant || grant.allowed <= 0) return false;
+      await updateDoc(doc(db, 'retakeGrants', grant.id), { allowed: Math.max(0, (grant.allowed || 0) - 1) } as any);
+      return true;
+    } catch (error) {
+      console.error('Error consuming retake:', error);
+      return false;
+    }
+  },
+
+  async revokeRetake(userId: string, quizId: string): Promise<void> {
+    try {
+      const ref = collection(db, 'retakeGrants');
+      const snap = await getDocs(query(ref, where('userId', '==', userId), where('quizId', '==', quizId)));
+      if (!snap.empty) {
+        await deleteDoc(doc(db, 'retakeGrants', snap.docs[0].id));
+      }
+    } catch (error) {
+      console.error('Error revoking retake:', error);
     }
   },
 
@@ -420,6 +522,37 @@ export const firestoreService = {
     } catch (error) {
       console.error('Error getting students:', error);
       return [];
+    }
+  },
+
+  async getPendingStudents(): Promise<(UserDoc & { id: string })[]> {
+    try {
+      const usersRef = collection(db, 'users');
+      const qy = query(usersRef, where('role', '==', 'student'));
+      const snapshot = await getDocs(qy);
+      const items = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as UserDoc) }));
+      return items.filter(s => (s.status ?? 'approved') !== 'approved');
+    } catch (error) {
+      console.error('Error getting pending students:', error);
+      return [];
+    }
+  },
+
+  async approveUser(uid: string): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'users', uid), { status: 'approved' as UserStatus, approvedAt: serverTimestamp() as any } as any);
+    } catch (error) {
+      console.error('Error approving user:', error);
+      throw error;
+    }
+  },
+
+  async rejectUser(uid: string): Promise<void> {
+    try {
+      await updateDoc(doc(db, 'users', uid), { status: 'rejected' as UserStatus } as any);
+    } catch (error) {
+      console.error('Error rejecting user:', error);
+      throw error;
     }
   },
 
@@ -540,6 +673,47 @@ export const firestoreService = {
     } catch (error) {
       console.error('Error getting average quiz score:', error);
       return 0;
+    }
+  },
+
+  // ===== TEACHER INSIGHTS / HELPERS =====
+  async getCompletionsByQuiz(quizId: string): Promise<Record<string, { lastAnsweredAt?: number }>> {
+    try {
+      const answersRef = collection(db, 'answers');
+      const snap = await getDocs(query(answersRef, where('quizId', '==', quizId)));
+      const map: Record<string, { lastAnsweredAt?: number }> = {};
+      snap.forEach(d => {
+        const a = d.data() as AnswerDoc;
+        const ts = (a as any).answeredAt?.toMillis?.() ?? 0;
+        const curr = map[a.userId]?.lastAnsweredAt ?? 0;
+        if (ts > curr) map[a.userId] = { lastAnsweredAt: ts };
+      });
+      return map;
+    } catch (error) {
+      console.error('Error getting completions by quiz:', error);
+      return {};
+    }
+  },
+
+  async getRetakeGrantsByQuiz(quizId: string): Promise<Array<RetakeGrantDoc & { id: string }>> {
+    try {
+      const ref = collection(db, 'retakeGrants');
+      const snap = await getDocs(query(ref, where('quizId', '==', quizId)));
+      return snap.docs.map(d => ({ id: d.id, ...(d.data() as RetakeGrantDoc) }));
+    } catch (error) {
+      console.error('Error getting retake grants by quiz:', error);
+      return [];
+    }
+  },
+
+  async getRetakeGrantsByUser(userId: string): Promise<Array<RetakeGrantDoc & { id: string }>> {
+    try {
+      const ref = collection(db, 'retakeGrants');
+      const snap = await getDocs(query(ref, where('userId', '==', userId)));
+      return snap.docs.map(d => ({ id: d.id, ...(d.data() as RetakeGrantDoc) }));
+    } catch (error) {
+      console.error('Error getting retake grants by user:', error);
+      return [];
     }
   },
 

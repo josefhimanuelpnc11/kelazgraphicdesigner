@@ -8,6 +8,7 @@ interface ManageStudentsProps {
 
 export const ManageStudents: React.FC<ManageStudentsProps> = ({ onClose }) => {
   const [students, setStudents] = useState<(UserDoc & { id: string })[]>([]);
+  const [showPendingOnly, setShowPendingOnly] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -69,11 +70,20 @@ export const ManageStudents: React.FC<ManageStudentsProps> = ({ onClose }) => {
           {loading ? (
             <div className="loading-state"><div className="loading-spinner" /><p>Memuat siswa...</p></div>
           ) : (
-            <div className="content-grid" style={{ gridTemplateColumns: '1fr' }}>
+            <div>
+              <div className="form-actions" style={{ justifyContent: 'space-between' }}>
+                <div />
+                <label className="btn-action" style={{ cursor: 'pointer' }}>
+                  <input type="checkbox" checked={showPendingOnly} onChange={(e) => setShowPendingOnly(e.target.checked)} /> Tampilkan hanya yang perlu persetujuan
+                </label>
+              </div>
+              <div className="content-grid" style={{ gridTemplateColumns: '1fr' }}>
               {students.length === 0 && (
                 <div className="empty-state">Belum ada siswa terdaftar</div>
               )}
-              {students.map(s => (
+              {students
+                .filter(s => !showPendingOnly || (s.status ?? 'approved') !== 'approved')
+                .map(s => (
                 <div key={s.id} className="content-card">
                   <div className="card-header">
                     <div className="module-order">S</div>
@@ -85,6 +95,12 @@ export const ManageStudents: React.FC<ManageStudentsProps> = ({ onClose }) => {
                         </>
                       ) : (
                         <>
+                          {(s.status ?? 'approved') !== 'approved' && (
+                            <>
+                              <button className="btn-action primary" onClick={async () => { await firestoreService.approveUser(s.id); await load(); }}>Setujui</button>
+                              <button className="btn-action delete" onClick={async () => { await firestoreService.rejectUser(s.id); await load(); }}>Tolak</button>
+                            </>
+                          )}
                           <button className="btn-action edit" onClick={() => startEdit(s)}>Edit</button>
                           <button className="btn-action delete" onClick={() => setConfirmDelete({ id: s.id, name: s.name })}>Hapus</button>
                         </>
@@ -112,13 +128,15 @@ export const ManageStudents: React.FC<ManageStudentsProps> = ({ onClose }) => {
                         <p>Email: {s.email || '-'}</p>
                         <div className="card-meta">
                           <span>Role: {s.role === 'teacher' ? 'Guru' : 'Siswa'}</span>
-                          <span>Dibuat: {/* Timestamp display intentionally simple */}</span>
+                            <span>Status: {(s.status ?? 'approved') === 'approved' ? 'Disetujui' : (s.status ?? 'pending') === 'pending' ? 'Menunggu' : 'Ditolak'}</span>
+                            <span>Dibuat: {/* Timestamp display intentionally simple */}</span>
                         </div>
                       </>
                     )}
                   </div>
                 </div>
               ))}
+              </div>
             </div>
           )}
         </div>

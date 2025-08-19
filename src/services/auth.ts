@@ -8,7 +8,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../firebase';
-import type { UserDoc, UserRole } from '../types';
+import type { UserDoc, UserRole, UserStatus } from '../types';
 
 export const authService = {
   // Helper function to determine user role based on email
@@ -27,14 +27,16 @@ export const authService = {
       const userCredential: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Determine role based on email if not explicitly provided
-      const userRole = role || this.getUserRole(email);
+  // Determine role based on email if not explicitly provided
+  const userRole = role || this.getUserRole(email);
+  const status: UserStatus = userRole === 'teacher' ? 'approved' : 'pending';
       
       // Save user data to Firestore
       await this.saveUserToFirestore(user.uid, {
         name,
         email: user.email || email,
         role: userRole,
+        status,
         createdAt: serverTimestamp() as any
       });
       
@@ -76,11 +78,12 @@ export const authService = {
       if (!userDoc) {
         // Determine role based on email
         const userRole = this.getUserRole(user.email || '');
-        
+        const status: UserStatus = userRole === 'teacher' ? 'approved' : 'pending';
         await this.saveUserToFirestore(user.uid, {
           name: user.displayName || 'Unknown',
           email: user.email || '',
           role: userRole,
+          status,
           createdAt: serverTimestamp() as any
         });
       } else {

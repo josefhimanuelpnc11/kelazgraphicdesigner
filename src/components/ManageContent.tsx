@@ -29,7 +29,9 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
   const [lessonForm, setLessonForm] = useState({
     title: '',
     content: '',
-    order: 1
+    order: 1,
+  assetUrl: '',
+  visible: true
   });
 
   const [moduleEditForm, setModuleEditForm] = useState({
@@ -41,7 +43,9 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
   const [lessonEditForm, setLessonEditForm] = useState({
     title: '',
     content: '',
-    order: 1
+    order: 1,
+  assetUrl: '',
+  visible: true
   });
 
   useEffect(() => {
@@ -109,9 +113,11 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
       await firestoreService.createLesson(selectedModuleId, {
         title: lessonForm.title,
         content: lessonForm.content,
-        order: lessonForm.order
+        order: lessonForm.order,
+        assets: lessonForm.assetUrl ? [lessonForm.assetUrl.trim()] : undefined,
+        visible: lessonForm.visible
       });
-      setLessonForm({ title: '', content: '', order: 1 });
+      setLessonForm({ title: '', content: '', order: 1, assetUrl: '', visible: true });
       setShowAddLesson(false);
       loadData();
     } catch (error) {
@@ -160,16 +166,18 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
 
   const startEditLesson = (l: LessonDoc & { id: string }) => {
     setEditingLessonId(l.id);
-    setLessonEditForm({ title: l.title, content: l.content ?? '', order: l.order || 1 });
+  setLessonEditForm({ title: l.title, content: l.content ?? '', order: l.order || 1, assetUrl: (l.assets && l.assets[0]) || '', visible: l.visible ?? true });
   };
 
   const saveEditLesson = async () => {
     if (!selectedModuleId) return;
     try {
-      await firestoreService.updateLesson(selectedModuleId, editingLessonId, {
+    await firestoreService.updateLesson(selectedModuleId, editingLessonId, {
         title: lessonEditForm.title,
         content: lessonEditForm.content,
-        order: lessonEditForm.order
+  order: lessonEditForm.order,
+  assets: lessonEditForm.assetUrl ? [lessonEditForm.assetUrl.trim()] : [],
+  visible: lessonEditForm.visible
       });
       setEditingLessonId('');
       await loadData();
@@ -464,6 +472,23 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
                         required
                       />
                     </div>
+                    <div className="form-group">
+                      <label>Lampiran PDF / Google Drive (opsional)</label>
+                      <input
+                        type="url"
+                        value={lessonForm.assetUrl}
+                        onChange={(e) => setLessonForm({ ...lessonForm, assetUrl: e.target.value })}
+                        placeholder="Tempel URL PDF atau tautan Google Drive"
+                      />
+                      <small style={{ color: '#64748b' }}>Tips: Untuk Google Drive, gunakan link "preview" atau tempel link biasa—sistem akan menormalkan untuk ditampilkan.</small>
+                    </div>
+                    <div className="form-group">
+                      <label>Tampilkan ke siswa</label>
+                      <select value={lessonForm.visible ? '1' : '0'} onChange={(e)=>setLessonForm({...lessonForm, visible: e.target.value==='1'})}>
+                        <option value="1">Ya</option>
+                        <option value="0">Tidak</option>
+                      </select>
+                    </div>
                     <div className="form-actions">
                       <button type="submit" className="btn-primary">
                         <i className="fas fa-save"></i>
@@ -514,6 +539,18 @@ export const ManageContent: React.FC<ManageContentProps> = ({ onClose }) => {
                             <div className="form-group">
                               <label>Konten</label>
                               <textarea rows={3} value={lessonEditForm.content} onChange={e=>setLessonEditForm({...lessonEditForm,content:e.target.value})} />
+                            </div>
+                            <div className="form-group">
+                              <label>Lampiran PDF / Google Drive (opsional)</label>
+                              <input type="url" value={lessonEditForm.assetUrl} onChange={e=>setLessonEditForm({ ...lessonEditForm, assetUrl: e.target.value })} />
+                              <small style={{ color: '#64748b' }}>Tempel URL PDF atau tautan Google Drive yang berisi materi.</small>
+                            </div>
+                            <div className="form-group">
+                              <label>Tampilkan ke siswa</label>
+                              <select value={lessonEditForm.visible ? '1' : '0'} onChange={(e)=>setLessonEditForm({...lessonEditForm, visible: e.target.value==='1'})}>
+                                <option value="1">Ya</option>
+                                <option value="0">Tidak</option>
+                              </select>
                             </div>
                             <div className="form-row">
                               <div className="form-group">

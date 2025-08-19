@@ -659,6 +659,23 @@
   margin-top: 20px;
 }
 
+/* Generic form grid for stacked sections (e.g., quiz questions) */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+/* Quiz-specific spacing */
+.quiz-options label {
+  display: block;
+  margin-bottom: 8px;
+}
+.quiz-options input[type="radio"],
+.quiz-options input[type="checkbox"] {
+  margin-right: 8px;
+}
+
 /* ===== CONTENT GRID ===== */
 .content-grid {
   display: grid;

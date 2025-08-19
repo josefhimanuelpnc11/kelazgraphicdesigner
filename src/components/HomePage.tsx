@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './HomePage.css';
 
 interface HomePageProps {
@@ -7,11 +7,24 @@ interface HomePageProps {
 
 export const HomePage = ({ onLoginClick }: HomePageProps) => {
   const [activeSection, setActiveSection] = useState('home');
+  const [banner, setBanner] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Read hash query for msg=rejected
+    const hash = window.location.hash || '';
+    const qIndex = hash.indexOf('?');
+    if (qIndex >= 0) {
+      const params = new URLSearchParams(hash.substring(qIndex + 1));
+      if ((params.get('msg') || '') === 'rejected') {
+        setBanner('Maaf, pendaftaran Anda ditolak oleh guru. Silakan hubungi guru untuk informasi lebih lanjut.');
+      }
+    }
+  }, []);
 
   return (
     <div className="home-page">
       {/* Header/Navigation */}
-      <header className="header">
+  <header className="header">
         <div className="container">
           <div className="logo">
             <h2>Kelaz</h2>
@@ -28,6 +41,13 @@ export const HomePage = ({ onLoginClick }: HomePageProps) => {
           </nav>
         </div>
       </header>
+      {banner && (
+        <div className="container" style={{ marginTop: 12 }}>
+          <div className="error-message" style={{ background: '#fef2f2', borderColor: '#fecaca' }}>
+            {banner}
+          </div>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className="hero">
