@@ -77,10 +77,23 @@
 
 /* Hero */
 .hero {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  /* Dynamic animated gradient background */
+  --grad-speed: 16s; /* default speed, will speed up on hover */
+  background: linear-gradient(
+    135deg,
+    #5b8fff 0%,
+    #6366f1 25%,
+    #8b5cf6 60%,
+    #a855f7 100%
+  );
+  background-size: 200% 200%;
+  animation: gradientFlow var(--grad-speed) ease-in-out infinite;
   color: white;
   padding: 80px 0;
 }
+
+/* Slightly faster animation when user interacts */
+.hero:hover { --grad-speed: 9s; }
 
 .hero .container {
   display: grid;
@@ -179,6 +192,9 @@
       radial-gradient(120% 80% at 80% 0%, rgba(255,255,255,0.12), transparent 50%),
       radial-gradient(140% 90% at -20% 120%, rgba(99,102,241,0.25), transparent 50%),
       rgba(255,255,255,0.06);
+    background-size: 160% 160%, 180% 180%, auto;
+    background-position: 80% 0%, -20% 120%, 0 0;
+    animation: heroGlowShift 18s ease-in-out infinite alternate;
     border: 1px solid rgba(255,255,255,0.2);
   }
   .hero-3d {
@@ -204,6 +220,32 @@
       height: 320px;
     }
   }
+
+/* Animated gradient keyframes */
+@keyframes gradientFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Subtle movement for the 3D container glow/background */
+@keyframes heroGlowShift {
+  0% {
+    background-position: 78% 2%, -22% 118%, 0 0;
+  }
+  50% {
+    background-position: 70% 8%, -10% 110%, 0 0;
+  }
+  100% {
+    background-position: 85% -5%, -30% 130%, 0 0;
+  }
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .hero { animation: none; }
+  .hero-visual { animation: none; }
+}
 
 
 .stat {
