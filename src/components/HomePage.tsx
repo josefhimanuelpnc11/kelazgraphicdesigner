@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Hero3D from './Hero3D';
 import './HomePage.css';
 
 interface HomePageProps {
@@ -57,10 +58,6 @@ export const HomePage = ({ onLoginClick }: HomePageProps) => {
             <p>Join our free online graphic design class. Master the fundamentals of design with interactive lessons, quizzes, and hands-on projects.</p>
             <div className="hero-stats">
               <div className="stat">
-                <h3>3</h3>
-                <p>Active Students</p>
-              </div>
-              <div className="stat">
                 <h3>Free</h3>
                 <p>100% Free Course</p>
               </div>
@@ -75,12 +72,7 @@ export const HomePage = ({ onLoginClick }: HomePageProps) => {
             </div>
           </div>
           <div className="hero-image">
-            <div className="design-placeholder">
-              <div className="design-element element-1">📐</div>
-              <div className="design-element element-2">🎨</div>
-              <div className="design-element element-3">✏️</div>
-              <div className="design-element element-4">📱</div>
-            </div>
+            <Hero3D />
           </div>
         </div>
       </section>
@@ -181,12 +173,6 @@ export const HomePage = ({ onLoginClick }: HomePageProps) => {
                 <li><a href="#contact">Contact</a></li>
                 <li><button onClick={onLoginClick} className="footer-link">Login</button></li>
               </ul>
-            </div>
-            <div className="footer-section">
-              <h4>Platform Info</h4>
-              <p>Built with React + TypeScript</p>
-              <p>Powered by Firebase</p>
-              <p>Hosted on GitHub Pages</p>
             </div>
           </div>
           <div className="footer-bottom">

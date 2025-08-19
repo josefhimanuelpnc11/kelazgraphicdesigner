@@ -12,7 +12,7 @@ export const AuthPage = () => {
   });
   const [formError, setFormError] = useState('');
   
-  const { login, register, loginWithGoogle, loading } = useAuth();
+  const { login, register, loginWithGoogle, loading, isAuthenticated } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -83,6 +83,14 @@ export const AuthPage = () => {
       confirmPassword: ''
     });
     setFormError('');
+  };
+
+  const handleBack = () => {
+    if (isAuthenticated) {
+      window.location.hash = '#/dashboard';
+    } else {
+      window.location.hash = '#/';
+    }
   };
 
   return (
@@ -193,7 +201,14 @@ export const AuthPage = () => {
             className="btn-google"
             disabled={loading}
           >
-            <span className="google-icon">🔍</span>
+            <span className="google-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" focusable="false" role="img">
+                <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12S17.4 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.3-.4-3.5z"/>
+                <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.8 16 18.9 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 6.1 29.6 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z"/>
+                <path fill="#4CAF50" d="M24 44c5.3 0 10.2-2 13.9-5.3l-6.4-5.4C29.4 34.5 26.9 36 24 36c-5.2 0-9.6-3.3-11.2-7.9l-6.5 5C9.7 39.6 16.3 44 24 44z"/>
+                <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1 2.8-3 5.2-5.6 6.8l.1-.1 6.4 5.4C34.9 42 40 38 42.9 32.3c1.1-2.1 1.7-4.6 1.7-7.3 0-1.2-.1-2.3-.4-3.5z"/>
+              </svg>
+            </span>
             Continue with Google
           </button>
 
@@ -208,9 +223,18 @@ export const AuthPage = () => {
                 {isLogin ? 'Sign up' : 'Sign in'}
               </button>
             </p>
+            <p className="back-row">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="link-button"
+              >
+                ← Back to Dashboard
+              </button>
+            </p>
             <div className="role-info">
               <p>📚 Join our free graphic design online class</p>
-              <p>� Start learning with interactive lessons and quizzes</p>
+              <p>🚀 Start learning with interactive lessons and quizzes</p>
             </div>
           </div>
         </div>
